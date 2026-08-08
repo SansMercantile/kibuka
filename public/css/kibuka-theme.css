@@ -1,0 +1,48 @@
+/* KIBUKA Aerospace Theme */
+/* Aerospace Situational Awareness Colors */
+
+:root {
+  /* KIBUKA Aerospace Color Scheme */
+  --system-primary: #aa00ff;      /* Purple */
+  --system-secondary: #ff00aa;    /* Magenta */
+  --system-accent: #00ffaa;       /* Cyan */
+  --system-bg: #0a0a0a;           /* Dark Background */
+  --system-card-bg: #1a1a1a;      /* Card Background */
+  --system-text: #ffffff;         /* White Text */
+  --system-text-secondary: #cccccc; /* Light Gray Text */
+}
+
+/* Aerospace Status Indicator */
+.aerospace-status {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(170, 0, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.9rem;
+  z-index: 1001;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--system-primary);
+}
+
+.aerospace-status .status-dot.active {
+  background: var(--system-accent);
+  box-shadow: 0 0 10px var(--system-accent);
+}
+
+/* Aerospace Dashboard Cards */
+.aerospace-card {
+  background: linear-gradient(135deg, var(--system-card-bg) 0%, rgba(170, 0, 255, 0.1) 100%);
+  border: 1px solid var(--system-primary);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.aerospace-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(170, 0, 255, 0.2);
+  border-color: var(--system-secondary);
+}
