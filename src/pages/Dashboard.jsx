@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Satellite, Radar, Shield, Activity, Settings, Eye, RefreshCw } from 'lucide-react';
+import { useTracked, useIss } from '../lib/orbital';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [refreshing, setRefreshing] = useState(false);
   const [refreshStatus, setRefreshStatus] = useState('');
+  const { data: tracked, error: trackedError, loading: trackedLoading } = useTracked();
+  const { pos: iss } = useIss();
+  const liveAssets = tracked?.assets?.filter((a) => a.found) ?? [];
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -35,44 +39,44 @@ const Dashboard = () => {
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="aerospace-card text-center p-6">
-          <div className="text-2xl font-bold text-purple-400 mb-2">SECURE</div>
-          <div className="text-gray-300 text-sm">Space Domain</div>
+          <div className="text-2xl font-bold text-cyan-400 mb-2">{liveAssets.length}</div>
+          <div className="text-gray-300 text-sm">Live Tracked Assets</div>
         </div>
         <div className="aerospace-card text-center p-6">
-          <div className="text-2xl font-bold text-white mb-2">1,247</div>
-          <div className="text-gray-300 text-sm">Tracked Objects</div>
+          <div className="text-2xl font-bold text-white mb-2">{liveAssets.filter((a) => a.regime === 'LEO').length}</div>
+          <div className="text-gray-300 text-sm">In LEO</div>
         </div>
         <div className="aerospace-card text-center p-6">
-          <div className="text-2xl font-bold text-cyan-400 mb-2">99.8%</div>
-          <div className="text-gray-300 text-sm">Tracking Accuracy</div>
+          <div className="text-2xl font-bold text-white mb-2">{liveAssets.filter((a) => a.regime !== 'LEO').length}</div>
+          <div className="text-gray-300 text-sm">GEO / Higher</div>
         </div>
         <div className="aerospace-card text-center p-6">
-          <div className="text-2xl font-bold text-pink-400 mb-2">24/7</div>
-          <div className="text-gray-300 text-sm">Global Coverage</div>
+          <div className="text-2xl font-bold text-purple-400 mb-2">{iss ? `${iss.latitude.toFixed(1)}°, ${iss.longitude.toFixed(1)}°` : '—'}</div>
+          <div className="text-gray-300 text-sm">ISS Live Position</div>
         </div>
       </div>
 
       <div className="aerospace-card p-6">
         <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
           <Satellite className="w-6 h-6 mr-2 text-purple-400" />
-          Active Orbital Tracking
+          Live Tracked Assets (CelesTrak)
         </h3>
+        {trackedLoading && <p className="text-gray-400 text-sm">Loading live orbital elements…</p>}
+        {trackedError && <p className="text-red-400 text-sm">Live orbital data unavailable: {trackedError}</p>}
         <div className="space-y-3">
-          <div className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
-            <div>
-              <div className="text-white font-medium">Constellation Satellite Alpha-7</div>
-              <div className="text-gray-400 text-sm">Low Earth Orbit - Altitude: 487km</div>
+          {liveAssets.map((a) => (
+            <div key={a.noradId} className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
+              <div>
+                <div className="text-white font-medium">{a.element.name}</div>
+                <div className="text-gray-400 text-sm">
+                  {a.regime} · inclination {a.element.inclinationDeg.toFixed(1)}° · {a.element.meanMotion.toFixed(2)} rev/day
+                </div>
+              </div>
+              <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded text-sm font-mono">NORAD {a.noradId}</span>
             </div>
-            <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-sm">NOMINAL</span>
-          </div>
-          <div className="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg">
-            <div>
-              <div className="text-white font-medium">Commercial Satellite Network</div>
-              <div className="text-gray-400 text-sm">Geostationary Orbit - 8 satellites</div>
-            </div>
-            <span className="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-sm">MONITORING</span>
-          </div>
+          ))}
         </div>
+        <p className="text-gray-500 text-xs mt-4">Real orbital elements from CelesTrak (US Space Force catalogue). Epoch: {liveAssets[0]?.element?.epoch ?? '—'}</p>
       </div>
     </div>
   );
@@ -81,40 +85,37 @@ const Dashboard = () => {
     <div className="aerospace-card p-6">
       <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
         <Satellite className="w-6 h-6 mr-2 text-purple-400" />
-        Tracked Object Catalog
+        Live Tracked Object Catalog (CelesTrak OMM)
       </h3>
+      {trackedLoading && <p className="text-gray-400 text-sm">Loading live orbital elements…</p>}
+      {trackedError && <p className="text-red-400 text-sm">Live orbital data unavailable: {trackedError}</p>}
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead>
             <tr className="text-gray-400 border-b border-gray-700">
               <th className="py-2 pr-4">Object</th>
-              <th className="py-2 pr-4">Orbit</th>
-              <th className="py-2 pr-4">Altitude</th>
-              <th className="py-2 pr-4">Velocity</th>
-              <th className="py-2">Status</th>
+              <th className="py-2 pr-4">NORAD</th>
+              <th className="py-2 pr-4">Regime</th>
+              <th className="py-2 pr-4">Inclination</th>
+              <th className="py-2 pr-4">Eccentricity</th>
+              <th className="py-2">Mean Motion</th>
             </tr>
           </thead>
           <tbody className="text-gray-200">
-            {[
-              ['Constellation Satellite Alpha-7', 'LEO', '487 km', '7.6 km/s', 'NOMINAL', 'green'],
-              ['Commercial Satellite Network', 'GEO', '35,786 km', '3.1 km/s', 'MONITORING', 'blue'],
-              ['Debris Fragment KX-2291', 'LEO', '512 km', '7.5 km/s', 'TRACKING', 'yellow'],
-              ['Weather Satellite Meridian-3', 'SSO', '705 km', '7.5 km/s', 'NOMINAL', 'green'],
-              ['ISS', 'LEO', '408 km', '7.66 km/s', 'NOMINAL', 'green'],
-            ].map(([name, orbit, alt, vel, status, color]) => (
-              <tr key={name} className="border-b border-gray-800/60">
-                <td className="py-3 pr-4 font-medium text-white">{name}</td>
-                <td className="py-3 pr-4">{orbit}</td>
-                <td className="py-3 pr-4">{alt}</td>
-                <td className="py-3 pr-4">{vel}</td>
-                <td className="py-3">
-                  <span className={`px-2 py-1 rounded text-xs bg-${color}-500/20 text-${color}-400`}>{status}</span>
-                </td>
+            {liveAssets.map((a) => (
+              <tr key={a.noradId} className="border-b border-gray-800/60">
+                <td className="py-3 pr-4 font-medium text-white">{a.element.name}</td>
+                <td className="py-3 pr-4 font-mono">{a.noradId}</td>
+                <td className="py-3 pr-4"><span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded text-xs">{a.regime}</span></td>
+                <td className="py-3 pr-4">{a.element.inclinationDeg.toFixed(2)}°</td>
+                <td className="py-3 pr-4">{a.element.eccentricity.toFixed(5)}</td>
+                <td className="py-3">{a.element.meanMotion.toFixed(2)} rev/day</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <p className="text-gray-500 text-xs mt-4">Real orbital element sets (OMM JSON) from CelesTrak. Regime derived from real mean motion.</p>
     </div>
   );
 
