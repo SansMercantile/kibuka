@@ -1,13 +1,15 @@
 // Real orbital data hooks for KIBUKA, fed by /api/v1/* (CelesTrak + Open Notify).
 import { useEffect, useState } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 export function useTracked() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let alive = true;
-    fetch('/api/v1/tracked')
+    fetch(`${API_BASE}/api/v1/tracked`)
       .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
       .then(({ ok, j }) => {
         if (!alive) return;
@@ -27,7 +29,7 @@ export function useIss() {
   useEffect(() => {
     let alive = true;
     const load = () =>
-      fetch('/api/v1/iss')
+      fetch(`${API_BASE}/api/v1/iss`)
         .then((r) => r.json())
         .then((j) => { if (alive) { setPos(j); setError(null); } })
         .catch((e) => alive && setError(e.message));
